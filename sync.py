@@ -2,11 +2,8 @@ import onedrivesdk
 from onedrivesdk.helpers import GetAuthCodeServer
 from requests import get
 import settings
-
-# get external ip address and save it in 'ip.txt'
-ext_ip = get('https://ipapi.co/ip/').text
-with open('ip.txt', 'w') as f:
-    f.write(ext_ip)
+from time import sleep
+from datetime import datetime
 
 # authentication
 redirect_uri = 'http://localhost:8080/'
@@ -18,6 +15,26 @@ auth_url = client.auth_provider.get_auth_url(redirect_uri)
 code = GetAuthCodeServer.get_auth_code(auth_url, redirect_uri)
 client.auth_provider.authenticate(code, redirect_uri, client_secret)
 
-# upload file
-returned_item = client.item(
-    drive='me', id='root').children['Raspberry_Pi_IP.txt'].upload('./ip.txt')
+
+def get_ip():
+    # get external ip address and save it in 'ip.txt'
+    ext_ip = get('https://ipapi.co/ip/').text
+    with open('ip.txt', 'w') as f:
+        f.write(ext_ip)
+
+
+def upload_file():
+    # upload file
+    returned_item = client.item(
+        drive='me', id='root').children['Raspberry_Pi_IP.txt'].upload('./ip.txt')
+
+
+sync_interval = settings.SYNC_INTERVAL * 60
+sync_days = settings.SYNC_DAYS
+
+start_time = datetime.now()
+
+while not sync_days or (datetime.now() - start_time).days <= sync_days:
+    get_ip()
+    upload_file()
+    sleep(sync_interval)
